@@ -17,13 +17,13 @@ client = bigquery.Client.from_service_account_json(SERVICE_ACCOUNT_FILE)
 # Query to fetch daily cost trends
 query = f"""
     SELECT 
-        DATE(usage_start_time) AS date,
+        DATE(usage_start_time) AS usage_date,
         SUM(cost) AS total_cost,
         currency
     FROM `{PROJECT_ID}.{DATASET_ID}.{TABLE_ID}`
     WHERE DATE(usage_start_time) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
-    GROUP BY date, currency
-    ORDER BY date DESC
+    GROUP BY usage_date, currency
+    ORDER BY usage_date DESC
 """
 
 # Execute query
@@ -31,5 +31,7 @@ query_job = client.query(query)
 df = query_job.result().to_dataframe()
 
 # Save to CSV
-df.to_csv("gcp_cost_by_day.csv", index=False)
-print("Daily cost data saved to gcp_cost_by_day.csv")
+csv_filename = "gcp_cost_by_day.csv"
+df.to_csv(csv_filename, index=False)
+
+print(f"Daily cost data saved to {csv_filename}")
