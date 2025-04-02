@@ -1,6 +1,6 @@
-import streamlit as st
 import os
 import pandas as pd
+import streamlit as st
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
 import io
@@ -51,7 +51,10 @@ def read_csv_from_drive(service, file_id):
     try:
         request = service.files().get_media(fileId=file_id)
         file_stream = io.BytesIO(request.execute())
-        return pd.read_csv(file_stream)
+        file_stream.seek(0)  # Ensure reading starts from the beginning
+
+        # Try reading as CSV (handle possible encoding issues)
+        return pd.read_csv(file_stream, encoding='utf-8', error_bad_lines=False)
     except Exception as e:
         st.error(f"Failed to read CSV file: {e}")
         return None
@@ -96,7 +99,12 @@ if folder_2025_id:
             final_files = list_files(service, selected_deeper_folder_id)
 
             if final_files:
-                csv_files = {f["name"]: f["id"] for f in final_files if f["mimeType"] == "text/csv"}
+                # **Fix: Accept both "text/csv" and "application/vnd.ms-excel"**
+                csv_files = {
+                    f["name"]: f["id"]
+                    for f in final_files
+                    if f["mimeType"] in ["text/csv", "application/vnd.ms-excel"]
+                }
 
                 # Display all files
                 for file in final_files:
